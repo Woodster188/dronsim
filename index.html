@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Симуляция полета дрона-квадракоптера</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚁 Симуляция полета дрона-квадракоптера</h1>
+            <p>Интерактивная 3D симуляция с системой стабилизации на основе уравнений Ляпунова</p>
+        </header>
+
+        <div class="main-layout">
+            <!-- Панель управления -->
+            <aside class="control-panel">
+                <div class="panel-section">
+                    <h2>🎮 Управление симуляцией</h2>
+                    <div class="button-group">
+                        <button id="startBtn" class="btn btn-primary">▶ Старт</button>
+                        <button id="pauseBtn" class="btn btn-secondary" disabled>⏸ Пауза</button>
+                        <button id="stopBtn" class="btn btn-danger" disabled>⏹ Стоп</button>
+                        <button id="resetBtn" class="btn btn-warning">🔄 Сброс</button>
+                    </div>
+                    <div class="demo-section">
+                        <button id="demoBtn" class="btn btn-demo">🎯 ДЕМО-РЕЖИМ СТАБИЛИЗАЦИИ</button>
+                        <p class="demo-hint">
+                            <strong>Цель:</strong> Удержать дрон в точке (0, 2, 0)<br>
+                            <strong>Воздействия:</strong> Ветер + толчки в 3D пространстве
+                        </p>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h2>👁️ Визуализация</h2>
+                    <div class="checkbox-group">
+                        <label>
+                            <input type="checkbox" id="showTarget" checked>
+                            Показать целевую точку
+                        </label>
+                    </div>
+                    <div class="checkbox-group">
+                        <label>
+                            <input type="checkbox" id="showForces" checked>
+                            Показать векторы сил
+                        </label>
+                    </div>
+                    <div class="checkbox-group">
+                        <label>
+                            <input type="checkbox" id="showTrajectory" checked>
+                            Показать траекторию
+                        </label>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h2>⚙️ Параметры дрона</h2>
+                    <div class="input-group">
+                        <label for="mass">Масса (кг):</label>
+                        <input type="number" id="mass" value="1.0" min="0.1" max="10" step="0.1">
+                    </div>
+                    <div class="input-group">
+                        <label for="motorThrust">Тяга двигателя (Н):</label>
+                        <input type="number" id="motorThrust" value="2.5" min="1" max="20" step="0.1">
+                    </div>
+                    <div class="input-group">
+                        <label for="motorDistance">Расстояние между двигателями (м):</label>
+                        <input type="number" id="motorDistance" value="0.25" min="0.1" max="1" step="0.05">
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h2>🌪️ Внешние воздействия</h2>
+                    <div class="input-group">
+                        <label for="windSpeed">Скорость ветра (м/с):</label>
+                        <input type="number" id="windSpeed" value="0" min="0" max="20" step="0.5">
+                    </div>
+                    <div class="input-group">
+                        <label for="windDirection">Направление ветра (°):</label>
+                        <input type="number" id="windDirection" value="0" min="0" max="360" step="15">
+                    </div>
+                    <div class="input-group">
+                        <label for="impulseFrequency">Частота толчков (раз/сек):</label>
+                        <input type="number" id="impulseFrequency" value="0.5" min="0" max="5" step="0.1">
+                    </div>
+                    <div class="input-group">
+                        <label for="impulseIntensity">Интенсивность толчков (Н):</label>
+                        <input type="number" id="impulseIntensity" value="5" min="0" max="50" step="1">
+                    </div>
+                    <div class="checkbox-group">
+                        <label>
+                            <input type="checkbox" id="enableObstacles">
+                            Включить препятствия
+                        </label>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h2>🎯 Контроллер стабилизации</h2>
+                    <div class="input-group">
+                        <label for="kpPos">kp (позиция):</label>
+                        <input type="number" id="kpPos" value="10.0" min="0" max="50" step="0.5">
+                    </div>
+                    <div class="input-group">
+                        <label for="kdPos">kd (позиция):</label>
+                        <input type="number" id="kdPos" value="5.0" min="0" max="20" step="0.5">
+                    </div>
+                    <div class="input-group">
+                        <label for="kiPos">ki (позиция):</label>
+                        <input type="number" id="kiPos" value="0.1" min="0" max="5" step="0.1">
+                    </div>
+                    <div class="input-group">
+                        <label for="kpRot">kp (ориентация):</label>
+                        <input type="number" id="kpRot" value="8.0" min="0" max="50" step="0.5">
+                    </div>
+                    <div class="input-group">
+                        <label for="kdRot">kd (ориентация):</label>
+                        <input type="number" id="kdRot" value="4.0" min="0" max="20" step="0.5">
+                    </div>
+                    <div class="input-group">
+                        <label for="kiRot">ki (ориентация):</label>
+                        <input type="number" id="kiRot" value="0.05" min="0" max="5" step="0.05">
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h2>📊 Информация</h2>
+                    <div class="info-display">
+                        <div class="info-item">
+                            <span class="info-label">Позиция (x, y, z):</span>
+                            <span class="info-value" id="positionInfo">0.00, 0.00, 0.00</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Скорость (м/с):</span>
+                            <span class="info-value" id="velocityInfo">0.00</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Ориентация (°):</span>
+                            <span class="info-value" id="rotationInfo">0, 0, 0</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Функция Ляпунова:</span>
+                            <span class="info-value" id="lyapunovInfo">0.00</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">FPS:</span>
+                            <span class="info-value" id="fpsInfo">60</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- 3D визуализация -->
+            <main class="visualization-container">
+                <div id="canvas-container"></div>
+
+                <!-- Легенда векторов сил -->
+                <div class="forces-legend" id="forcesLegend">
+                    <h4>Легенда векторов сил:</h4>
+                    <div class="legend-item">
+                        <span class="legend-arrow" style="background: #00bfff;"></span>
+                        <span>Ветер</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-arrow" style="background: #ff8c00;"></span>
+                        <span>Импульсы</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-arrow" style="background: #ff0000;"></span>
+                        <span>Суммарная внешняя сила</span>
+                    </div>
+                </div>
+
+                <div class="camera-controls-hint">
+                    💡 Управление камерой: ЛКМ - вращение, Колесико - зум, ПКМ - перемещение |
+                    🎯 Нажмите "ДЕМО-РЕЖИМ" для визуализации стабилизации!
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Подключение Three.js из CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <!-- Подключение модулей проекта -->
+    <script type="module" src="js/drone.js"></script>
+    <script type="module" src="js/lyapunov.js"></script>
+    <script type="module" src="js/externalForces.js"></script>
+    <script type="module" src="js/visualization.js"></script>
+    <script type="module" src="js/ui.js"></script>
+    <script type="module" src="js/simulation.js"></script>
+
+    <!-- Отладочный скрипт для кнопки демо (можно удалить после проверки) -->
+    <script>
+        // Проверяем загрузку через небольшую задержку
+        setTimeout(() => {
+            console.log('🔍 Проверка компонентов:');
+            console.log('- Кнопка demoBtn:', document.getElementById('demoBtn') ? '✅' : '❌');
+            console.log('- window.simulation:', window.simulation ? '✅' : '❌');
+
+            if (window.simulation && window.simulation.startDemoMode) {
+                console.log('- Метод startDemoMode:', '✅');
+            } else {
+                console.error('❌ Метод startDemoMode не найден!');
+            }
+
+            // Если все есть, но обработчик не работает - добавляем вручную
+            const demoBtn = document.getElementById('demoBtn');
+            if (demoBtn && window.simulation && !demoBtn.dataset.listenerAdded) {
+                console.log('⚠️ Добавляем обработчик кнопки демо вручную...');
+                demoBtn.addEventListener('click', function() {
+                    console.log('🎯 Клик по кнопке демо (прямой обработчик)');
+                    if (window.simulation.isDemoMode) {
+                        window.simulation.exitDemoMode();
+                        this.textContent = '🎯 ДЕМО-РЕЖИМ СТАБИЛИЗАЦИИ';
+                        this.classList.remove('active-demo');
+                    } else {
+                        window.simulation.startDemoMode();
+                        this.textContent = '🔙 ВЫЙТИ ИЗ ДЕМО-РЕЖИМА';
+                        this.classList.add('active-demo');
+                    }
+                });
+                demoBtn.dataset.listenerAdded = 'true';
+                console.log('✅ Прямой обработчик добавлен');
+            }
+        }, 500);
+    </script>
+</body>
+</html>
+
