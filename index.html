@@ -43,6 +43,37 @@
                 </div>
 
                 <div class="panel-section">
+                    <h2>🎓 Режим обучения</h2>
+                    <p class="training-description">
+                        Автоматический подбор оптимальных параметров PID контроллера
+                    </p>
+                    <div class="training-controls">
+                        <button id="startTrainingBtn" class="btn btn-training">🎓 Начать обучение</button>
+                        <button id="stopTrainingBtn" class="btn btn-secondary" disabled>⏹ Остановить</button>
+                    </div>
+                    <div id="trainingProgress" class="training-progress" style="display: none;">
+                        <div class="progress-info">
+                            <span id="trainingStatus">Готово</span>
+                            <span id="trainingIteration">0 / 50</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div id="trainingProgressBar" class="progress-bar"></div>
+                        </div>
+                        <div class="training-stats">
+                            <div class="stat-item">
+                                <span class="stat-label">Лучший Score:</span>
+                                <span id="trainingScore" class="stat-value">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="trainingResults" class="training-results" style="display: none;"></div>
+                    <div class="training-actions" style="display: none;" id="trainingActions">
+                        <button id="applyBestBtn" class="btn btn-success">✅ Применить лучшие</button>
+                        <button id="restoreOriginalBtn" class="btn btn-warning">🔙 Вернуть исходные</button>
+                    </div>
+                </div>
+
+                <div class="panel-section">
                     <h2>👁️ Визуализация</h2>
                     <div class="checkbox-group">
                         <label>
@@ -200,6 +231,7 @@
     <script type="module" src="js/lyapunov.js"></script>
     <script type="module" src="js/externalForces.js"></script>
     <script type="module" src="js/keyboardControl.js"></script>
+    <script type="module" src="js/trainingMode.js"></script>
     <script type="module" src="js/visualization.js"></script>
     <script type="module" src="js/ui.js"></script>
     <script type="module" src="js/simulation.js"></script>

@@ -4,11 +4,12 @@
  */
 
 import { Drone } from './drone.js';
-import { LyapunovController } from './lyapunov.js';
 import { ExternalForces } from './externalForces.js';
-import { Visualization } from './visualization.js';
-import { UIManager } from './ui.js';
 import { KeyboardControl } from './keyboardControl.js';
+import { LyapunovController } from './lyapunov.js';
+import { TrainingMode } from './trainingMode.js';
+import { UIManager } from './ui.js';
+import { Visualization } from './visualization.js';
 
 class Simulation {
     constructor() {
@@ -19,6 +20,7 @@ class Simulation {
         this.visualization = null;
         this.uiManager = null;
         this.keyboardControl = null;
+        this.trainingMode = null;
 
         // Состояние симуляции
         this.isRunning = false;
@@ -80,6 +82,9 @@ class Simulation {
 
         // Создаем управление с клавиатуры
         this.keyboardControl = new KeyboardControl(this);
+
+        // Создаем режим обучения
+        this.trainingMode = new TrainingMode(this);
 
         // Обновляем визуализацию препятствий
         this.visualization.updateObstacles(

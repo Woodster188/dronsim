@@ -19,6 +19,12 @@ export class UIManager {
         this.showForcesInput = document.getElementById('showForces');
         this.showTrajectoryInput = document.getElementById('showTrajectory');
 
+        // Элементы режима обучения
+        this.startTrainingBtn = document.getElementById('startTrainingBtn');
+        this.stopTrainingBtn = document.getElementById('stopTrainingBtn');
+        this.applyBestBtn = document.getElementById('applyBestBtn');
+        this.restoreOriginalBtn = document.getElementById('restoreOriginalBtn');
+
         // Поля ввода параметров дрона
         this.massInput = document.getElementById('mass');
         this.motorThrustInput = document.getElementById('motorThrust');
@@ -76,6 +82,20 @@ export class UIManager {
         }
         if (this.showTrajectoryInput) {
             this.showTrajectoryInput.addEventListener('change', () => this.onTrajectoryChange());
+        }
+
+        // Режим обучения
+        if (this.startTrainingBtn) {
+            this.startTrainingBtn.addEventListener('click', () => this.onStartTraining());
+        }
+        if (this.stopTrainingBtn) {
+            this.stopTrainingBtn.addEventListener('click', () => this.onStopTraining());
+        }
+        if (this.applyBestBtn) {
+            this.applyBestBtn.addEventListener('click', () => this.onApplyBest());
+        }
+        if (this.restoreOriginalBtn) {
+            this.restoreOriginalBtn.addEventListener('click', () => this.onRestoreOriginal());
         }
 
         // Параметры дрона - обновляем при изменении
@@ -173,6 +193,63 @@ export class UIManager {
         if (!this.showTrajectoryInput.checked) {
             this.simulation.visualization.clearTrajectory();
         }
+    }
+
+    /**
+     * Обработчик кнопки "Начать обучение"
+     */
+    async onStartTraining() {
+        console.log('🎓 Запуск режима обучения...');
+
+        // Обновляем кнопки
+        this.startTrainingBtn.disabled = true;
+        this.stopTrainingBtn.disabled = false;
+
+        // Показываем прогресс
+        const progressDiv = document.getElementById('trainingProgress');
+        if (progressDiv) progressDiv.style.display = 'block';
+
+        // Скрываем результаты предыдущего обучения
+        const resultsDiv = document.getElementById('trainingResults');
+        if (resultsDiv) resultsDiv.style.display = 'none';
+
+        const actionsDiv = document.getElementById('trainingActions');
+        if (actionsDiv) actionsDiv.style.display = 'none';
+
+        // Запускаем обучение
+        await this.simulation.trainingMode.startTraining();
+
+        // После завершения
+        this.startTrainingBtn.disabled = false;
+        this.stopTrainingBtn.disabled = true;
+
+        // Показываем кнопки действий
+        if (actionsDiv) actionsDiv.style.display = 'flex';
+    }
+
+    /**
+     * Обработчик кнопки "Остановить обучение"
+     */
+    onStopTraining() {
+        this.simulation.trainingMode.stopTraining();
+        this.startTrainingBtn.disabled = false;
+        this.stopTrainingBtn.disabled = true;
+    }
+
+    /**
+     * Обработчик кнопки "Применить лучшие"
+     */
+    onApplyBest() {
+        this.simulation.trainingMode.applyBestParams();
+        alert('✅ Оптимальные параметры применены!\nТеперь можно запустить симуляцию и проверить результат.');
+    }
+
+    /**
+     * Обработчик кнопки "Вернуть исходные"
+     */
+    onRestoreOriginal() {
+        this.simulation.trainingMode.restoreOriginalParams();
+        alert('🔙 Исходные параметры восстановлены.');
     }
 
     /**
