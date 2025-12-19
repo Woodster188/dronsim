@@ -37,6 +37,12 @@ export class UIManager {
         this.impulseIntensityInput = document.getElementById('impulseIntensity');
         this.enableObstaclesInput = document.getElementById('enableObstacles');
 
+        // Поля ввода для банок с огурцами
+        this.enablePickleJarsInput = document.getElementById('enablePickleJars');
+        this.pickleJarFrequencyInput = document.getElementById('pickleJarFrequency');
+        this.pickleJarSpeedInput = document.getElementById('pickleJarSpeed');
+        this.pickleJarImpactForceInput = document.getElementById('pickleJarImpactForce');
+
         // Поля ввода контроллера
         this.kpPosInput = document.getElementById('kpPos');
         this.kdPosInput = document.getElementById('kdPos');
@@ -109,6 +115,20 @@ export class UIManager {
         this.impulseFrequencyInput.addEventListener('change', () => this.updateExternalForces());
         this.impulseIntensityInput.addEventListener('change', () => this.updateExternalForces());
         this.enableObstaclesInput.addEventListener('change', () => this.updateExternalForces());
+
+        // Банки с огурцами - обновляем при изменении
+        if (this.enablePickleJarsInput) {
+            this.enablePickleJarsInput.addEventListener('change', () => this.updateExternalForces());
+        }
+        if (this.pickleJarFrequencyInput) {
+            this.pickleJarFrequencyInput.addEventListener('change', () => this.updateExternalForces());
+        }
+        if (this.pickleJarSpeedInput) {
+            this.pickleJarSpeedInput.addEventListener('change', () => this.updateExternalForces());
+        }
+        if (this.pickleJarImpactForceInput) {
+            this.pickleJarImpactForceInput.addEventListener('change', () => this.updateExternalForces());
+        }
 
         // Контроллер - обновляем при изменении
         this.kpPosInput.addEventListener('change', () => this.updateControllerParameters());
@@ -308,6 +328,20 @@ export class UIManager {
             obstaclesEnabled: this.enableObstaclesInput.checked
         };
 
+        // Добавляем параметры банок, если элементы существуют
+        if (this.enablePickleJarsInput) {
+            params.pickleJarsEnabled = this.enablePickleJarsInput.checked;
+        }
+        if (this.pickleJarFrequencyInput) {
+            params.pickleJarFrequency = parseFloat(this.pickleJarFrequencyInput.value);
+        }
+        if (this.pickleJarSpeedInput) {
+            params.pickleJarSpeed = parseFloat(this.pickleJarSpeedInput.value);
+        }
+        if (this.pickleJarImpactForceInput) {
+            params.pickleJarImpactForce = parseFloat(this.pickleJarImpactForceInput.value);
+        }
+
         // Валидация
         if (this.validateExternalForces(params)) {
             this.simulation.updateExternalForces(params);
@@ -333,6 +367,24 @@ export class UIManager {
         if (params.impulseIntensity < 0 || params.impulseIntensity > 50) {
             alert('Интенсивность толчков должна быть от 0 до 50 Н');
             return false;
+        }
+        if (params.pickleJarFrequency !== undefined) {
+            if (params.pickleJarFrequency < 0 || params.pickleJarFrequency > 2) {
+                alert('Частота банок должна быть от 0 до 2 раз/сек');
+                return false;
+            }
+        }
+        if (params.pickleJarSpeed !== undefined) {
+            if (params.pickleJarSpeed < 1 || params.pickleJarSpeed > 10) {
+                alert('Скорость банок должна быть от 1 до 10 м/с');
+                return false;
+            }
+        }
+        if (params.pickleJarImpactForce !== undefined) {
+            if (params.pickleJarImpactForce < 5 || params.pickleJarImpactForce > 50) {
+                alert('Сила удара банки должна быть от 5 до 50 Н');
+                return false;
+            }
         }
         return true;
     }
@@ -406,7 +458,7 @@ export class UIManager {
      * Получение текущих параметров из UI
      */
     getCurrentParameters() {
-        return {
+        const params = {
             drone: {
                 mass: parseFloat(this.massInput.value),
                 motorThrust: parseFloat(this.motorThrustInput.value),
@@ -428,6 +480,22 @@ export class UIManager {
                 kiRot: parseFloat(this.kiRotInput.value)
             }
         };
+
+        // Добавляем параметры банок, если элементы существуют
+        if (this.enablePickleJarsInput) {
+            params.externalForces.pickleJarsEnabled = this.enablePickleJarsInput.checked;
+        }
+        if (this.pickleJarFrequencyInput) {
+            params.externalForces.pickleJarFrequency = parseFloat(this.pickleJarFrequencyInput.value);
+        }
+        if (this.pickleJarSpeedInput) {
+            params.externalForces.pickleJarSpeed = parseFloat(this.pickleJarSpeedInput.value);
+        }
+        if (this.pickleJarImpactForceInput) {
+            params.externalForces.pickleJarImpactForce = parseFloat(this.pickleJarImpactForceInput.value);
+        }
+
+        return params;
     }
 
     /**
@@ -445,6 +513,20 @@ export class UIManager {
         this.impulseFrequencyInput.value = params.externalForces.impulseFrequency;
         this.impulseIntensityInput.value = params.externalForces.impulseIntensity;
         this.enableObstaclesInput.checked = params.externalForces.obstaclesEnabled;
+
+        // Банки с огурцами (если параметры существуют)
+        if (this.enablePickleJarsInput && params.externalForces.pickleJarsEnabled !== undefined) {
+            this.enablePickleJarsInput.checked = params.externalForces.pickleJarsEnabled;
+        }
+        if (this.pickleJarFrequencyInput && params.externalForces.pickleJarFrequency !== undefined) {
+            this.pickleJarFrequencyInput.value = params.externalForces.pickleJarFrequency;
+        }
+        if (this.pickleJarSpeedInput && params.externalForces.pickleJarSpeed !== undefined) {
+            this.pickleJarSpeedInput.value = params.externalForces.pickleJarSpeed;
+        }
+        if (this.pickleJarImpactForceInput && params.externalForces.pickleJarImpactForce !== undefined) {
+            this.pickleJarImpactForceInput.value = params.externalForces.pickleJarImpactForce;
+        }
 
         // Контроллер
         this.kpPosInput.value = params.controller.kpPos;

@@ -25,6 +25,9 @@ export class Visualization {
         // Визуализация препятствий
         this.obstacleMeshes = [];
 
+        // Визуализация банок с огурцами 🥒
+        this.pickleJarMeshes = {};
+
         // Визуализация осей координат
         this.axesHelper = null;
 
@@ -371,6 +374,17 @@ export class Visualization {
         );
         this.scene.add(this.forceArrows.impulse);
 
+        // Стрелка для банок с огурцами (зеленая с желтым)
+        this.forceArrows.pickleJar = new THREE.ArrowHelper(
+            new THREE.Vector3(0, 0, 0),
+            new THREE.Vector3(0, 0, 0),
+            1,
+            0x88ff44,
+            0.25,
+            0.18
+        );
+        this.scene.add(this.forceArrows.pickleJar);
+
         // Стрелка для управляющей силы (зеленая)
         this.forceArrows.control = new THREE.ArrowHelper(
             new THREE.Vector3(0, 0, 0),
@@ -410,6 +424,221 @@ export class Visualization {
             this.targetMarker.children[1].rotation.z = time;
             this.targetMarker.children[2].rotation.z = time * 1.2;
             this.targetMarker.children[3].rotation.z = time * 0.8;
+        }
+    }
+
+    /**
+     * Создание 3D модели банки с огурцами
+     */
+    createPickleJarMesh() {
+        const jarGroup = new THREE.Group();
+
+        // Стеклянная банка (цилиндр)
+        const jarGeometry = new THREE.CylinderGeometry(0.08, 0.08, 0.15, 16);
+        const jarMaterial = new THREE.MeshPhongMaterial({
+            color: 0x88ff88,
+            transparent: true,
+            opacity: 0.6,
+            shininess: 100
+        });
+        const jar = new THREE.Mesh(jarGeometry, jarMaterial);
+        jarGroup.add(jar);
+
+        // Крышка банки
+        const lidGeometry = new THREE.CylinderGeometry(0.09, 0.09, 0.02, 16);
+        const lidMaterial = new THREE.MeshPhongMaterial({
+            color: 0xffdd44,
+            shininess: 50
+        });
+        const lid = new THREE.Mesh(lidGeometry, lidMaterial);
+        lid.position.y = 0.085;
+        jarGroup.add(lid);
+
+        // Этикетка
+        const labelGeometry = new THREE.CylinderGeometry(0.081, 0.081, 0.06, 16);
+        const labelMaterial = new THREE.MeshPhongMaterial({
+            color: 0xffffff,
+            shininess: 30
+        });
+        const label = new THREE.Mesh(labelGeometry, labelMaterial);
+        label.position.y = 0;
+        jarGroup.add(label);
+
+        // Огурцы внутри (маленькие зеленые цилиндры)
+        for (let i = 0; i < 3; i++) {
+            const pickleGeometry = new THREE.CylinderGeometry(0.015, 0.015, 0.08, 8);
+            const pickleMaterial = new THREE.MeshPhongMaterial({
+                color: 0x228822
+            });
+            const pickle = new THREE.Mesh(pickleGeometry, pickleMaterial);
+            pickle.position.x = (Math.random() - 0.5) * 0.04;
+            pickle.position.y = (Math.random() - 0.5) * 0.06;
+            pickle.position.z = (Math.random() - 0.5) * 0.04;
+            pickle.rotation.z = Math.random() * Math.PI;
+            jarGroup.add(pickle);
+        }
+
+        jarGroup.castShadow = true;
+        return jarGroup;
+    }
+
+    /**
+     * Создание эффекта разбития банки
+     */
+    createShatterEffect(position) {
+        const particleCount = 15;
+        const particles = [];
+
+        for (let i = 0; i < particleCount; i++) {
+            // Осколки стекла
+            const geometry = new THREE.BoxGeometry(0.02, 0.02, 0.02);
+            const material = new THREE.MeshPhongMaterial({
+                color: i < 10 ? 0x88ff88 : 0xffdd44, // стекло или крышка
+                transparent: true,
+                opacity: 0.8
+            });
+            const particle = new THREE.Mesh(geometry, material);
+
+            particle.position.set(position.x, position.y, position.z);
+
+            // Случайная скорость разлета
+            particle.userData.velocity = {
+                x: (Math.random() - 0.5) * 3,
+                y: Math.random() * 2 + 1,
+                z: (Math.random() - 0.5) * 3
+            };
+            particle.userData.rotationSpeed = {
+                x: (Math.random() - 0.5) * 10,
+                y: (Math.random() - 0.5) * 10,
+                z: (Math.random() - 0.5) * 10
+            };
+            particle.userData.lifetime = 0;
+
+            this.scene.add(particle);
+            particles.push(particle);
+        }
+
+        // Анимация частиц
+        const animateParticles = () => {
+            const dt = 0.016;
+            const gravity = -9.81;
+            let allDone = true;
+
+            for (const particle of particles) {
+                if (particle.userData.lifetime < 1.5) {
+                    allDone = false;
+
+                    // Гравитация
+                    particle.userData.velocity.y += gravity * dt;
+
+                    // Обновление позиции
+                    particle.position.x += particle.userData.velocity.x * dt;
+                    particle.position.y += particle.userData.velocity.y * dt;
+                    particle.position.z += particle.userData.velocity.z * dt;
+
+                    // Вращение
+                    particle.rotation.x += particle.userData.rotationSpeed.x * dt;
+                    particle.rotation.y += particle.userData.rotationSpeed.y * dt;
+                    particle.rotation.z += particle.userData.rotationSpeed.z * dt;
+
+                    // Затухание
+                    particle.material.opacity = 0.8 * (1 - particle.userData.lifetime / 1.5);
+
+                    particle.userData.lifetime += dt;
+
+                    // Остановка при касании земли
+                    if (particle.position.y <= 0.05) {
+                        particle.position.y = 0.05;
+                        particle.userData.velocity.y = 0;
+                        particle.userData.velocity.x *= 0.9;
+                        particle.userData.velocity.z *= 0.9;
+                    }
+                }
+            }
+
+            if (!allDone) {
+                requestAnimationFrame(animateParticles);
+            } else {
+                // Удаляем частицы
+                for (const particle of particles) {
+                    this.scene.remove(particle);
+                    particle.geometry.dispose();
+                    particle.material.dispose();
+                }
+            }
+        };
+
+        animateParticles();
+    }
+
+    /**
+     * Обновление визуализации банок с огурцами
+     */
+    updatePickleJars(pickleJars) {
+        // Получаем текущие ID банок
+        const currentJarIds = new Set(pickleJars.map(jar => jar.id));
+
+        // Удаляем mesh для банок, которых больше нет
+        for (const id in this.pickleJarMeshes) {
+            if (!currentJarIds.has(parseFloat(id))) {
+                const mesh = this.pickleJarMeshes[id];
+
+                // Если банка была близко к земле, создаем эффект разбития
+                if (mesh.position.y < 0.3) {
+                    this.createShatterEffect(mesh.position);
+                }
+
+                this.scene.remove(mesh);
+                mesh.traverse((child) => {
+                    if (child.geometry) child.geometry.dispose();
+                    if (child.material) child.material.dispose();
+                });
+                delete this.pickleJarMeshes[id];
+            }
+        }
+
+        // Обновляем или создаем mesh для текущих банок
+        for (const jar of pickleJars) {
+            if (!this.pickleJarMeshes[jar.id]) {
+                // Создаем новый mesh
+                this.pickleJarMeshes[jar.id] = this.createPickleJarMesh();
+                this.scene.add(this.pickleJarMeshes[jar.id]);
+            }
+
+            // Обновляем позицию и вращение
+            const mesh = this.pickleJarMeshes[jar.id];
+            mesh.position.set(jar.position.x, jar.position.y, jar.position.z);
+            mesh.rotation.set(jar.rotation.x, jar.rotation.y, jar.rotation.z);
+
+            // Визуальный эффект при падении (банка слегка деформируется)
+            if (jar.isFalling) {
+                const wobble = Math.sin(jar.rotation.x * 3) * 0.1 + 1;
+                mesh.scale.set(wobble, 1 / wobble, wobble);
+            } else {
+                mesh.scale.set(1, 1, 1);
+            }
+
+            // Добавляем эффект при столкновении (вспышка)
+            if (jar.hasCollided && !jar.userData?.flashShown) {
+                // Временно увеличиваем яркость материалов
+                mesh.traverse((child) => {
+                    if (child.material) {
+                        const originalEmissive = child.material.emissive?.getHex() || 0x000000;
+                        child.material.emissive = new THREE.Color(0xffff00);
+                        child.material.emissiveIntensity = 0.5;
+
+                        setTimeout(() => {
+                            if (child.material) {
+                                child.material.emissive = new THREE.Color(originalEmissive);
+                                child.material.emissiveIntensity = 0;
+                            }
+                        }, 100);
+                    }
+                });
+
+                jar.userData = jar.userData || {};
+                jar.userData.flashShown = true;
+            }
         }
     }
 
@@ -461,6 +690,26 @@ export class Visualization {
                 this.forceArrows.impulse.visible = true;
             } else {
                 this.forceArrows.impulse.visible = false;
+            }
+        }
+
+        // Банки с огурцами
+        if (forces.pickleJar) {
+            const pickleJarMagnitude = Math.sqrt(
+                forces.pickleJar.x ** 2 + forces.pickleJar.y ** 2 + forces.pickleJar.z ** 2
+            );
+            if (pickleJarMagnitude > 0.01) {
+                const pickleJarDir = new THREE.Vector3(
+                    forces.pickleJar.x,
+                    forces.pickleJar.y,
+                    forces.pickleJar.z
+                ).normalize();
+                this.forceArrows.pickleJar.position.copy(origin);
+                this.forceArrows.pickleJar.setDirection(pickleJarDir);
+                this.forceArrows.pickleJar.setLength(pickleJarMagnitude * scale * 0.35, 0.25, 0.18);
+                this.forceArrows.pickleJar.visible = true;
+            } else {
+                this.forceArrows.pickleJar.visible = false;
             }
         }
 
@@ -567,6 +816,16 @@ export class Visualization {
      */
     dispose() {
         window.removeEventListener('resize', this.onWindowResize);
+
+        // Очищаем банки с огурцами
+        for (const id in this.pickleJarMeshes) {
+            this.scene.remove(this.pickleJarMeshes[id]);
+            this.pickleJarMeshes[id].traverse((child) => {
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) child.material.dispose();
+            });
+        }
+        this.pickleJarMeshes = {};
 
         if (this.renderer) {
             this.renderer.dispose();

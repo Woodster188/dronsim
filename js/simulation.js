@@ -317,6 +317,10 @@ class Simulation {
         const forces = this.externalForces.getLastForces();
         this.visualization.updateForceVectors(this.drone.position, forces);
 
+        // Обновляем визуализацию банок с огурцами
+        const pickleJars = this.externalForces.getActivePickleJars();
+        this.visualization.updatePickleJars(pickleJars);
+
         // Обновляем траекторию (проверяем чекбокс)
         const showTrajectory = document.getElementById('showTrajectory')?.checked ?? true;
         this.visualization.updateTrajectory(this.drone.position, showTrajectory);
@@ -352,7 +356,8 @@ class Simulation {
         // 3. Получаем внешние силы
         const externalForces = this.externalForces.getTotalExternalForces(
             this.drone.position,
-            this.time
+            this.time,
+            dt
         );
 
         // Внешние моменты (пока нет, но можно добавить)

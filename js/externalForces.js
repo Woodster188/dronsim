@@ -24,6 +24,15 @@ export class ExternalForces {
         this.collisionDistance = 0.5; // м (расстояние, на котором начинает действовать отталкивание)
         this.collisionStiffness = 50; // коэффициент жесткости отталкивания
 
+        // Параметры летающих банок с огурцами 🥒
+        this.pickleJarsEnabled = params.pickleJarsEnabled || false;
+        this.pickleJarFrequency = params.pickleJarFrequency || 0.3; // раз в секунду
+        this.pickleJarSpeed = params.pickleJarSpeed || 3.0; // м/с
+        this.pickleJarImpactForce = params.pickleJarImpactForce || 10; // Н
+        this.activePickleJars = []; // массив активных банок
+        this.lastPickleJarTime = 0;
+        this.pickleJarCollisionRadius = 0.3; // м (радиус столкновения)
+
         // Временная переменная для отслеживания
         this.time = 0;
     }
@@ -37,6 +46,10 @@ export class ExternalForces {
         if (params.impulseFrequency !== undefined) this.impulseFrequency = params.impulseFrequency;
         if (params.impulseIntensity !== undefined) this.impulseIntensity = params.impulseIntensity;
         if (params.obstaclesEnabled !== undefined) this.obstaclesEnabled = params.obstaclesEnabled;
+        if (params.pickleJarsEnabled !== undefined) this.pickleJarsEnabled = params.pickleJarsEnabled;
+        if (params.pickleJarFrequency !== undefined) this.pickleJarFrequency = params.pickleJarFrequency;
+        if (params.pickleJarSpeed !== undefined) this.pickleJarSpeed = params.pickleJarSpeed;
+        if (params.pickleJarImpactForce !== undefined) this.pickleJarImpactForce = params.pickleJarImpactForce;
     }
 
     /**
@@ -141,6 +154,208 @@ export class ExternalForces {
     }
 
     /**
+     * Создание новой банки с огурцами
+     */
+    spawnPickleJar(dronePosition) {
+        // Случайное направление подлета (сферические координаты)
+        const azimuth = Math.random() * 2 * Math.PI; // 0-360°
+        const elevation = (Math.random() - 0.5) * Math.PI * 0.5; // ±45°
+
+        // Начальная позиция на расстоянии 15 метров от дрона
+        const spawnDistance = 15;
+        const horizontalComponent = Math.cos(elevation);
+
+        const spawnPosition = {
+            x: dronePosition.x + spawnDistance * Math.cos(azimuth) * horizontalComponent,
+            y: dronePosition.y + spawnDistance * Math.sin(elevation),
+            z: dronePosition.z + spawnDistance * Math.sin(azimuth) * horizontalComponent
+        };
+
+        // Направление к дрону (нормализованный вектор)
+        const dx = dronePosition.x - spawnPosition.x;
+        const dy = dronePosition.y - spawnPosition.y;
+        const dz = dronePosition.z - spawnPosition.z;
+        const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+        const direction = {
+            x: dx / distance,
+            y: dy / distance,
+            z: dz / distance
+        };
+
+        // Скорость банки
+        const velocity = {
+            x: direction.x * this.pickleJarSpeed,
+            y: direction.y * this.pickleJarSpeed,
+            z: direction.z * this.pickleJarSpeed
+        };
+
+        // Создаем объект банки
+        const jar = {
+            id: Date.now() + Math.random(), // уникальный ID
+            position: spawnPosition,
+            velocity: velocity,
+            rotation: { x: 0, y: 0, z: 0 }, // для визуализации вращения
+            rotationSpeed: {
+                x: (Math.random() - 0.5) * 6,
+                y: (Math.random() - 0.5) * 4,
+                z: (Math.random() - 0.5) * 2
+            }, // случайная скорость вращения
+            hasCollided: false,
+            isFalling: false, // флаг падения
+            spawnTime: this.time
+        };
+
+        this.activePickleJars.push(jar);
+        console.log('🥒 Банка с огурцами запущена!');
+    }
+
+    /**
+     * Обновление позиций банок с огурцами
+     */
+    updatePickleJars(dronePosition, dt) {
+        if (!this.pickleJarsEnabled) return { x: 0, y: 0, z: 0 };
+
+        // Проверяем, нужно ли создать новую банку
+        if (this.pickleJarFrequency > 0) {
+            const timeSinceLastJar = this.time - this.lastPickleJarTime;
+            const jarInterval = 1.0 / this.pickleJarFrequency;
+
+            if (timeSinceLastJar >= jarInterval) {
+                this.spawnPickleJar(dronePosition);
+                this.lastPickleJarTime = this.time;
+            }
+        }
+
+        let totalForce = { x: 0, y: 0, z: 0 };
+        const gravity = -9.81; // м/с² (ускорение свободного падения)
+
+        // Обновляем позиции существующих банок
+        for (let i = this.activePickleJars.length - 1; i >= 0; i--) {
+            const jar = this.activePickleJars[i];
+
+            // Если банка падает, применяем гравитацию
+            if (jar.isFalling) {
+                jar.velocity.y += gravity * dt; // ускорение вниз
+
+                // Добавляем небольшое сопротивление воздуха
+                const airResistance = 0.98;
+                jar.velocity.x *= airResistance;
+                jar.velocity.z *= airResistance;
+
+                // Увеличиваем скорость вращения при падении
+                jar.rotationSpeed.x *= 1.05;
+                jar.rotationSpeed.y *= 1.05;
+                jar.rotationSpeed.z *= 1.05;
+            }
+
+            // Обновляем позицию
+            jar.position.x += jar.velocity.x * dt;
+            jar.position.y += jar.velocity.y * dt;
+            jar.position.z += jar.velocity.z * dt;
+
+            // Обновляем вращение для визуализации
+            jar.rotation.x += jar.rotationSpeed.x * dt;
+            jar.rotation.y += jar.rotationSpeed.y * dt;
+            jar.rotation.z += jar.rotationSpeed.z * dt;
+
+            // Проверяем столкновение с землей
+            if (jar.position.y <= 0.1 && jar.isFalling) {
+                // Банка упала на землю - удаляем её
+                this.activePickleJars.splice(i, 1);
+                console.log('🥒 Банка упала на землю и разбилась!');
+                continue;
+            }
+
+            // Проверяем столкновение с дроном (только если банка еще не падает)
+            if (!jar.hasCollided && !jar.isFalling) {
+                const dx = jar.position.x - dronePosition.x;
+                const dy = jar.position.y - dronePosition.y;
+                const dz = jar.position.z - dronePosition.z;
+                const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+                if (distance < this.pickleJarCollisionRadius) {
+                    // Столкновение! Создаем импульсную силу на дрон
+                    const impactDirection = {
+                        x: jar.velocity.x,
+                        y: jar.velocity.y,
+                        z: jar.velocity.z
+                    };
+
+                    const velocityMagnitude = Math.sqrt(
+                        impactDirection.x ** 2 +
+                        impactDirection.y ** 2 +
+                        impactDirection.z ** 2
+                    );
+
+                    if (velocityMagnitude > 0.01) {
+                        // Сила на дрон
+                        totalForce.x += (impactDirection.x / velocityMagnitude) * this.pickleJarImpactForce;
+                        totalForce.y += (impactDirection.y / velocityMagnitude) * this.pickleJarImpactForce;
+                        totalForce.z += (impactDirection.z / velocityMagnitude) * this.pickleJarImpactForce;
+
+                        // Банка отскакивает от дрона (упругое столкновение)
+                        // Вектор нормали от дрона к банке
+                        const normalX = dx / distance;
+                        const normalY = dy / distance;
+                        const normalZ = dz / distance;
+
+                        // Коэффициент упругости (0.5 = частично упругий удар)
+                        const restitution = 0.5;
+
+                        // Вычисляем проекцию скорости на нормаль
+                        const velocityDotNormal =
+                            jar.velocity.x * normalX +
+                            jar.velocity.y * normalY +
+                            jar.velocity.z * normalZ;
+
+                        // Отражаем скорость относительно нормали
+                        jar.velocity.x = jar.velocity.x - 2 * velocityDotNormal * normalX;
+                        jar.velocity.y = jar.velocity.y - 2 * velocityDotNormal * normalY;
+                        jar.velocity.z = jar.velocity.z - 2 * velocityDotNormal * normalZ;
+
+                        // Применяем коэффициент упругости и добавляем случайное вращение
+                        jar.velocity.x *= restitution;
+                        jar.velocity.y *= restitution;
+                        jar.velocity.z *= restitution;
+
+                        // Добавляем случайное отклонение (банка кувыркается)
+                        jar.velocity.x += (Math.random() - 0.5) * 2;
+                        jar.velocity.y += (Math.random() - 0.5) * 2;
+                        jar.velocity.z += (Math.random() - 0.5) * 2;
+
+                        // Увеличиваем вращение после удара
+                        jar.rotationSpeed.x += (Math.random() - 0.5) * 10;
+                        jar.rotationSpeed.y += (Math.random() - 0.5) * 10;
+                        jar.rotationSpeed.z += (Math.random() - 0.5) * 10;
+
+                        // Помечаем банку как упавшую и начинаем падение
+                        jar.hasCollided = true;
+                        jar.isFalling = true;
+
+                        console.log('💥 Банка попала в дрон и отлетела!');
+                    }
+                }
+            }
+
+            // Удаляем банки, которые улетели слишком далеко или живут слишком долго
+            const distanceFromOrigin = Math.sqrt(
+                jar.position.x ** 2 +
+                jar.position.y ** 2 +
+                jar.position.z ** 2
+            );
+
+            const lifetime = this.time - jar.spawnTime;
+
+            if (distanceFromOrigin > 50 || lifetime > 30) {
+                this.activePickleJars.splice(i, 1);
+            }
+        }
+
+        return totalForce;
+    }
+
+    /**
      * Проверка коллизий с препятствиями и вычисление силы отталкивания
      */
     checkCollisions(dronePosition) {
@@ -184,22 +399,24 @@ export class ExternalForces {
     /**
      * Вычисление всех внешних сил
      */
-    getTotalExternalForces(dronePosition, currentTime) {
+    getTotalExternalForces(dronePosition, currentTime, dt = 0.016) {
         this.time = currentTime;
 
         const windForce = this.getWindForce();
         const impulseForce = this.getImpulseForce(currentTime);
         const collisionForce = this.checkCollisions(dronePosition);
+        const pickleJarForce = this.updatePickleJars(dronePosition, dt);
 
         // Сохраняем отдельные компоненты для визуализации
         this.lastForces = {
             wind: windForce,
             impulse: impulseForce,
             collision: collisionForce,
+            pickleJar: pickleJarForce,
             total: {
-                x: windForce.x + impulseForce.x + collisionForce.x,
-                y: windForce.y + impulseForce.y + collisionForce.y,
-                z: windForce.z + impulseForce.z + collisionForce.z
+                x: windForce.x + impulseForce.x + collisionForce.x + pickleJarForce.x,
+                y: windForce.y + impulseForce.y + collisionForce.y + pickleJarForce.y,
+                z: windForce.z + impulseForce.z + collisionForce.z + pickleJarForce.z
             }
         };
 
@@ -214,8 +431,16 @@ export class ExternalForces {
             wind: { x: 0, y: 0, z: 0 },
             impulse: { x: 0, y: 0, z: 0 },
             collision: { x: 0, y: 0, z: 0 },
+            pickleJar: { x: 0, y: 0, z: 0 },
             total: { x: 0, y: 0, z: 0 }
         };
+    }
+
+    /**
+     * Получение списка активных банок для визуализации
+     */
+    getActivePickleJars() {
+        return this.activePickleJars;
     }
 
     /**
@@ -232,6 +457,8 @@ export class ExternalForces {
         this.lastImpulseTime = 0;
         this.impulseStartTime = -1;
         this.currentImpulse = { x: 0, y: 0, z: 0 };
+        this.lastPickleJarTime = 0;
+        this.activePickleJars = [];
         this.time = 0;
     }
 }

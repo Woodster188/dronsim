@@ -135,6 +135,26 @@
                             Включить препятствия
                         </label>
                     </div>
+
+                    <h3 style="margin-top: 15px; margin-bottom: 10px; color: #88ff44;">🥒 Банки с огурцами</h3>
+                    <div class="checkbox-group">
+                        <label>
+                            <input type="checkbox" id="enablePickleJars">
+                            Включить летающие банки
+                        </label>
+                    </div>
+                    <div class="input-group">
+                        <label for="pickleJarFrequency">Частота банок (раз/сек):</label>
+                        <input type="number" id="pickleJarFrequency" value="0.3" min="0" max="2" step="0.1">
+                    </div>
+                    <div class="input-group">
+                        <label for="pickleJarSpeed">Скорость банок (м/с):</label>
+                        <input type="number" id="pickleJarSpeed" value="3.0" min="1" max="10" step="0.5">
+                    </div>
+                    <div class="input-group">
+                        <label for="pickleJarImpactForce">Сила удара (Н):</label>
+                        <input type="number" id="pickleJarImpactForce" value="10" min="5" max="50" step="1">
+                    </div>
                 </div>
 
                 <div class="panel-section">
