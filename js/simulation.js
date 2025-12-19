@@ -8,6 +8,7 @@ import { LyapunovController } from './lyapunov.js';
 import { ExternalForces } from './externalForces.js';
 import { Visualization } from './visualization.js';
 import { UIManager } from './ui.js';
+import { KeyboardControl } from './keyboardControl.js';
 
 class Simulation {
     constructor() {
@@ -17,6 +18,7 @@ class Simulation {
         this.externalForces = null;
         this.visualization = null;
         this.uiManager = null;
+        this.keyboardControl = null;
 
         // Состояние симуляции
         this.isRunning = false;
@@ -76,6 +78,9 @@ class Simulation {
         // Создаем UI менеджер
         this.uiManager = new UIManager(this);
 
+        // Создаем управление с клавиатуры
+        this.keyboardControl = new KeyboardControl(this);
+
         // Обновляем визуализацию препятствий
         this.visualization.updateObstacles(
             this.externalForces.getObstacles(),
@@ -129,6 +134,7 @@ class Simulation {
         this.controller.reset();
         this.externalForces.reset();
         this.visualization.clearTrajectory();
+        this.keyboardControl.reset();
         this.time = 0;
         this.accumulator = 0;
 
@@ -288,6 +294,9 @@ class Simulation {
 
         // Фиксированный шаг времени для физики (можем делать несколько итераций за кадр)
         while (this.accumulator >= this.fixedTimeStep) {
+            // Обновляем управление с клавиатуры
+            this.keyboardControl.update(this.fixedTimeStep);
+
             this.updatePhysics(this.fixedTimeStep);
             this.accumulator -= this.fixedTimeStep;
             this.time += this.fixedTimeStep;

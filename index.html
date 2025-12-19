@@ -24,6 +24,15 @@
                         <button id="stopBtn" class="btn btn-danger" disabled>⏹ Стоп</button>
                         <button id="resetBtn" class="btn btn-warning">🔄 Сброс</button>
                     </div>
+
+                    <div class="keyboard-control-section">
+                        <div id="keyboardIndicator" class="keyboard-indicator">🤖 АВТОПИЛОТ</div>
+                        <div class="keyboard-hint">
+                            <strong>Нажмите K</strong> для включения ручного управления<br>
+                            <small>WASD - движение, Space/Shift - высота</small>
+                        </div>
+                    </div>
+
                     <div class="demo-section">
                         <button id="demoBtn" class="btn btn-demo">🎯 ДЕМО-РЕЖИМ СТАБИЛИЗАЦИИ</button>
                         <p class="demo-hint">
@@ -174,8 +183,9 @@
                 </div>
 
                 <div class="camera-controls-hint">
-                    💡 Управление камерой: ЛКМ - вращение, Колесико - зум, ПКМ - перемещение |
-                    🎯 Нажмите "ДЕМО-РЕЖИМ" для визуализации стабилизации!
+                    💡 Камера: ЛКМ - вращение, Колесико - зум, ПКМ - перемещение |
+                    ⌨️ Нажмите K для ручного управления |
+                    🎯 "ДЕМО-РЕЖИМ" для стабилизации
                 </div>
             </main>
         </div>
@@ -189,6 +199,7 @@
     <script type="module" src="js/drone.js"></script>
     <script type="module" src="js/lyapunov.js"></script>
     <script type="module" src="js/externalForces.js"></script>
+    <script type="module" src="js/keyboardControl.js"></script>
     <script type="module" src="js/visualization.js"></script>
     <script type="module" src="js/ui.js"></script>
     <script type="module" src="js/simulation.js"></script>
